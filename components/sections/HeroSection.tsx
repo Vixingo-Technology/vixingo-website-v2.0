@@ -2,12 +2,21 @@
 
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { Button } from "@/components/ui/Button";
+import { ShaderAnimation } from "@/components/ui/shader-lines";
+import { useTheme } from "@/components/providers/ThemeProvider";
 import Link from "next/link";
 
 export function HeroSection() {
+  const { theme } = useTheme();
+
   return (
     <section className="relative min-h-screen flex items-center noise-overlay overflow-x-clip">
-      {/* Background gradient */}
+      {/* Shader background animation */}
+      <div className={`absolute inset-0 pointer-events-none ${theme === "light" ? "opacity-30" : "opacity-60"}`}>
+        <ShaderAnimation />
+      </div>
+
+      {/* Overlay gradient to ensure text readability */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
@@ -15,31 +24,6 @@ export function HeroSection() {
             "radial-gradient(ellipse at center, rgba(201,168,76,0.05) 0%, transparent 70%)",
         }}
       />
-
-      {/* Floating geometric shapes — absolute positioned on right */}
-      <div className="absolute right-[5%] top-1/2 -translate-y-1/2 hidden lg:block pointer-events-none">
-        <div className="relative w-80 h-80">
-          <div className="absolute inset-0 animate-float">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-40 border border-accent-gold/20 rounded-full" />
-            <div className="absolute top-10 left-1/2 -translate-x-1/2 w-28 h-28 border border-accent-gold/30 rounded-full animate-pulse-gold" />
-            <div className="absolute top-4 left-1/4 w-2 h-2 bg-accent-gold rounded-full opacity-60" />
-            <div className="absolute bottom-8 right-1/4 w-3 h-3 bg-accent-gold-light rounded-full opacity-40" />
-          </div>
-          <div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 animate-float"
-            style={{ animationDelay: "1s" }}
-          >
-            <div className="w-full h-full border-2 border-accent-gold/40 rotate-45" />
-          </div>
-          <div
-            className="absolute top-1/3 right-0 w-16 h-16 animate-float"
-            style={{ animationDelay: "0.5s" }}
-          >
-            <div className="w-full h-full border border-accent-gold/20 rounded-lg rotate-12" />
-          </div>
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-accent-gold/5 rounded-full blur-xl" />
-        </div>
-      </div>
 
       <div className="container-main relative z-10 py-32 md:py-0">
         <ScrollReveal delay={100}>

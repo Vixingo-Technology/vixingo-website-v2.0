@@ -67,7 +67,7 @@ export default function PortfolioPage() {
                 {categories.map((cat) => (
                   <button
                     key={cat}
-                    className="px-4 py-2 text-sm rounded-lg border border-bg-border text-text-secondary hover:border-accent-gold hover:text-accent-gold transition-all cursor-pointer first:bg-accent-gold first:text-[#1A1A16] first:border-accent-gold"
+                    className="px-4 py-2 text-sm rounded-lg border border-bg-border text-text-secondary hover:border-accent-gold hover:text-accent-gold transition-all cursor-pointer first:bg-accent-gold first:text-white first:border-accent-gold"
                   >
                     {cat}
                   </button>

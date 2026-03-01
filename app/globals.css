@@ -23,6 +23,11 @@
   --success: #4CAF7D;
   --info: #5A9BE0;
 
+  --on-accent: #FFFFFF;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.3);
+  --shadow-lg: 0 8px 30px rgba(0,0,0,0.4);
+
   --text-hero: clamp(3rem, 8vw, 7rem);
   --text-h1: clamp(2rem, 4vw, 3.5rem);
   --text-h2: clamp(1.5rem, 3vw, 2.25rem);
@@ -32,18 +37,27 @@
 }
 
 [data-theme="light"] {
-  --bg-primary: #A6AAA8;
-  --bg-secondary: #969A98;
-  --bg-elevated: #B6BAB8;
-  --bg-border: #E0DED4;
+  --bg-primary: #FAFAF7;
+  --bg-secondary: #F1F0EB;
+  --bg-elevated: #FFFFFF;
+  --bg-border: #DDD9CE;
 
-  --text-primary: #1A1A16;
-  --text-secondary: #4A4A40;
-  --text-muted: #8A8A80;
+  --text-primary: #1C1C18;
+  --text-secondary: #52514A;
+  --text-muted: #9B9990;
 
-  --accent-gold: #A8861E;
-  --accent-gold-light: #C9A84C;
-  --accent-gold-glow: rgba(168, 134, 30, 0.1);
+  --accent-gold: #A07818;
+  --accent-gold-light: #C49A20;
+  --accent-gold-glow: rgba(160, 120, 24, 0.08);
+
+  --danger: #D44444;
+  --success: #3A9468;
+  --info: #4484CC;
+
+  --on-accent: #FFFFFF;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 30px rgba(0,0,0,0.10);
 }
 
 @theme inline {
@@ -191,4 +205,74 @@ h1, h2, h3, h4, h5, h6 {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
   pointer-events: none;
   z-index: 0;
+}
+[data-theme="light"] .noise-overlay::before {
+  opacity: 0.03;
+}
+
+/* ============================================
+   LIGHT MODE REFINEMENTS
+   ============================================ */
+
+/* Scrollbar */
+[data-theme="light"] ::-webkit-scrollbar-track { background: #F1F0EB; }
+[data-theme="light"] ::-webkit-scrollbar-thumb { background: #CCC8BC; }
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: var(--accent-gold); }
+
+/* Elevated surfaces get subtle shadows in light mode */
+[data-theme="light"] .card-hover {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+[data-theme="light"] .card-hover:hover {
+  box-shadow: 0 8px 24px rgba(160,120,24,0.12);
+}
+
+/* Gold gradient text needs slightly different stops in light */
+[data-theme="light"] .gold-gradient-text {
+  background: linear-gradient(135deg, #A07818, #C49A20);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Gold border glow toned down */
+[data-theme="light"] .gold-border-glow {
+  box-shadow: 0 0 12px rgba(160,120,24,0.12);
+}
+
+/* Selection */
+[data-theme="light"] ::selection {
+  background: rgba(160,120,24,0.2);
+  color: #1C1C18;
+}
+
+/* Btn shimmer — lighter sweep in light mode */
+[data-theme="light"] .btn-shimmer::before {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+}
+
+/* Prose in light mode (editor) */
+[data-theme="light"] .prose-invert {
+  --tw-prose-body: var(--text-primary);
+  --tw-prose-headings: var(--text-primary);
+  --tw-prose-counters: var(--text-secondary);
+  --tw-prose-bullets: var(--text-muted);
+  --tw-prose-quotes: var(--text-secondary);
+  --tw-prose-code: var(--text-primary);
+  --tw-prose-pre-bg: var(--bg-secondary);
+  --tw-prose-pre-code: var(--text-primary);
+  --tw-prose-links: var(--accent-gold);
+  color: var(--text-primary);
+}
+
+/* Focus rings lighter */
+[data-theme="light"] *:focus-visible {
+  outline-color: var(--accent-gold);
+}
+
+/* Input/select background in light mode — ensure no browser gray */
+[data-theme="light"] select,
+[data-theme="light"] select option {
+  background-color: var(--bg-elevated);
+  color: var(--text-primary);
 }

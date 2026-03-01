@@ -117,7 +117,7 @@ export function ChatWidget() {
                 <div
                   className={`max-w-[80%] px-3 py-2 rounded-lg text-sm ${
                     msg.role === "user"
-                      ? "bg-accent-gold text-[#1A1A16]"
+                      ? "bg-accent-gold text-white"
                       : "bg-bg-elevated text-text-primary"
                   }`}
                 >
@@ -160,7 +160,7 @@ export function ChatWidget() {
             <button
               type="submit"
               disabled={loading || !input.trim()}
-              className="p-2 bg-accent-gold text-[#1A1A16] rounded-lg hover:bg-accent-gold-light transition-colors disabled:opacity-50 cursor-pointer"
+              className="p-2 bg-accent-gold text-white rounded-lg hover:bg-accent-gold-light transition-colors disabled:opacity-50 cursor-pointer"
             >
               <PaperPlaneRight size={18} weight="fill" />
             </button>
@@ -171,7 +171,7 @@ export function ChatWidget() {
       {/* Floating Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-4 right-4 sm:right-6 z-50 w-14 h-14 bg-accent-gold text-[#1A1A16] rounded-full shadow-lg flex items-center justify-center hover:bg-accent-gold-light hover:scale-105 transition-all cursor-pointer"
+        className="fixed bottom-4 right-4 sm:right-6 z-50 w-14 h-14 bg-accent-gold text-white rounded-full shadow-lg flex items-center justify-center hover:bg-accent-gold-light hover:scale-105 transition-all cursor-pointer"
         aria-label="Open chat"
       >
         {isOpen ? (

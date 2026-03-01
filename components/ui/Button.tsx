@@ -16,9 +16,9 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
     const variants = {
       primary:
-        "bg-accent-gold text-[#1A1A16] hover:bg-accent-gold-light font-bold",
+        "bg-accent-gold text-white hover:bg-accent-gold-light font-bold shadow-sm",
       ghost:
-        "border border-accent-gold text-accent-gold hover:bg-accent-gold hover:text-[#1A1A16]",
+        "border border-accent-gold text-accent-gold hover:bg-accent-gold hover:text-white",
       danger: "bg-danger text-white hover:opacity-90",
       secondary:
         "bg-bg-elevated text-text-primary border border-bg-border hover:border-accent-gold",

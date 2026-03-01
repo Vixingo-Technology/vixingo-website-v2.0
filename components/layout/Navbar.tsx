@@ -80,7 +80,7 @@ export function Navbar() {
             <ThemeToggle />
             <Link
               href="/login"
-              className="hidden md:inline-flex items-center px-4 py-2 text-sm border border-accent-gold text-accent-gold rounded-lg hover:bg-accent-gold hover:text-[#1A1A16] transition-all"
+              className="hidden md:inline-flex items-center px-4 py-2 text-sm border border-accent-gold text-accent-gold rounded-lg hover:bg-accent-gold hover:text-white transition-all"
             >
               Login
             </Link>
@@ -113,7 +113,7 @@ export function Navbar() {
             <Link
               href="/login"
               onClick={() => setMobileOpen(false)}
-              className="px-6 py-3 border border-accent-gold text-accent-gold rounded-lg hover:bg-accent-gold hover:text-[#1A1A16] transition-all"
+              className="px-6 py-3 border border-accent-gold text-accent-gold rounded-lg hover:bg-accent-gold hover:text-white transition-all"
             >
               Login
             </Link>

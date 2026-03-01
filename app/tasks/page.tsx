@@ -126,7 +126,7 @@ export default function TasksPage() {
                 key={v}
                 onClick={() => setView(v)}
                 className={`px-4 py-2 text-sm font-medium transition-colors capitalize
-                  ${view === v ? "bg-accent-gold text-black" : "bg-bg-secondary text-text-secondary hover:text-text-primary"}`}
+                  ${view === v ? "bg-accent-gold text-white" : "bg-bg-secondary text-text-secondary hover:text-text-primary"}`}
               >
                 {v}
               </button>
