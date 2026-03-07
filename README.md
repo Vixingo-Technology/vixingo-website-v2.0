@@ -14,6 +14,7 @@ A production-ready company website & internal platform built with **Next.js 16**
 ## Features
 
 ### Public Website
+
 - **Landing page** — Hero, services teaser, portfolio showcase, blog, team preview, SaaS waitlist, contact CTA
 - **Services** — AI Automation, Full-Stack Development, AI Integration
 - **Portfolio** — Filterable project gallery with detail pages
@@ -24,6 +25,7 @@ A production-ready company website & internal platform built with **Next.js 16**
 - **AI Chatbot (Vix)** — Floating chat widget with knowledge-base responses
 
 ### Employee Portal (Auth Required)
+
 - **Dashboard** — Stats, recent tasks, activity feed
 - **Task Manager** — Kanban / list / calendar views with drag-and-drop
 - **Case Studies** — CRUD with visibility controls (Public / Internal / Confidential)
@@ -31,6 +33,7 @@ A production-ready company website & internal platform built with **Next.js 16**
 - **Portfolio Manager** — CRUD with featured toggle & category filters
 
 ### Admin Panel (Admin Role Only)
+
 - **Admin Dashboard** — KPIs, recent submissions, waitlist chart
 - **Employee Management** — Invite, role editing, activate/deactivate
 - **Submissions Inbox** — Contact form emails with read/reply/archive workflow
@@ -38,6 +41,7 @@ A production-ready company website & internal platform built with **Next.js 16**
 - **Settings** — Company info, social links, notifications, chatbot config
 
 ### Design System
+
 - Dark mode (default) + Light mode toggle
 - Gold accent palette (`#C9A84C`)
 - 4 Google Fonts: Bebas Neue, Syne, DM Sans, JetBrains Mono
@@ -47,18 +51,18 @@ A production-ready company website & internal platform built with **Next.js 16**
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | Next.js 16 (App Router, Turbopack) |
-| Language | TypeScript 5 |
-| Styling | Tailwind CSS v4 + CSS custom properties |
-| Auth | NextAuth.js v4 (Credentials, JWT) |
-| Database | Prisma 5 + PostgreSQL |
-| Rich Text | Tiptap |
-| Animations | Framer Motion, CSS keyframes |
-| Icons | Phosphor Icons |
-| Forms | React Hook Form + Zod |
-| Toasts | Sonner |
+| Layer      | Technology                              |
+| ---------- | --------------------------------------- |
+| Framework  | Next.js 16 (App Router, Turbopack)      |
+| Language   | TypeScript 5                            |
+| Styling    | Tailwind CSS v4 + CSS custom properties |
+| Auth       | NextAuth.js v4 (Credentials, JWT)       |
+| Database   | Prisma 5 + PostgreSQL                   |
+| Rich Text  | Tiptap                                  |
+| Animations | Framer Motion, CSS keyframes            |
+| Icons      | Phosphor Icons                          |
+| Forms      | React Hook Form + Zod                   |
+| Toasts     | Sonner                                  |
 
 ---
 
@@ -98,28 +102,53 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) to view the site.
 
+### Use Supabase As The Database
+
+This project already uses PostgreSQL via Prisma, so Supabase can be used without changing the schema provider.
+
+1. Create a Supabase project in the dashboard.
+2. Go to `Project Settings -> Database -> Connection string`.
+3. Copy both connection strings:
+    - Pooled connection (transaction/pooler, port `6543`) for `DATABASE_URL`
+    - Direct connection (port `5432`) for `DIRECT_URL`
+4. Update `.env.local` with those values (see `.env.example` for format).
+   Prisma 7 reads these from `prisma.config.ts` (not from `schema.prisma`).
+5. Apply schema to Supabase:
+
+```bash
+npm run db:push
+```
+
+6. (Optional) Seed demo data:
+
+```bash
+npm run db:seed
+```
+
+If your password contains special characters, URL-encode it before putting it in the connection string.
+
 ### Demo Accounts
 
-| Role | Email | Password |
-|------|-------|----------|
-| Admin | admin@vixingo.com | Admin123! |
+| Role            | Email              | Password     |
+| --------------- | ------------------ | ------------ |
+| Admin           | admin@vixingo.com  | Admin123!    |
 | Senior Employee | jordan@vixingo.com | Employee123! |
-| Employee | sam@vixingo.com | Employee123! |
+| Employee        | sam@vixingo.com    | Employee123! |
 
 ---
 
 ## Scripts
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start dev server (Turbopack) |
-| `npm run build` | Production build |
-| `npm run start` | Start production server |
-| `npm run lint` | Run ESLint |
-| `npm run db:push` | Push Prisma schema to database |
-| `npm run db:seed` | Seed database with demo data |
-| `npm run db:studio` | Open Prisma Studio |
-| `npm run db:generate` | Regenerate Prisma client |
+| Command               | Description                    |
+| --------------------- | ------------------------------ |
+| `npm run dev`         | Start dev server (Turbopack)   |
+| `npm run build`       | Production build               |
+| `npm run start`       | Start production server        |
+| `npm run lint`        | Run ESLint                     |
+| `npm run db:push`     | Push Prisma schema to database |
+| `npm run db:seed`     | Seed database with demo data   |
+| `npm run db:studio`   | Open Prisma Studio             |
+| `npm run db:generate` | Regenerate Prisma client       |
 
 ---
 

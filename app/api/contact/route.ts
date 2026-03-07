@@ -1,49 +1,51 @@
 import { NextResponse } from "next/server";
 import { contactFormSchema } from "@/lib/validations";
-
-// In-memory store for development
-const submissions: Array<{
-  id: string;
-  name: string;
-  email: string;
-  company?: string;
-  serviceInterest: string;
-  budget?: string;
-  message: string;
-  status: string;
-  createdAt: Date;
-}> = [];
+import { prisma } from "@/lib/db";
+import { ZodError } from "zod";
 
 export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    const validated = contactFormSchema.parse(body);
+    try {
+        const body = await request.json();
+        const validated = contactFormSchema.parse(body);
 
-    const submission = {
-      id: crypto.randomUUID(),
-      ...validated,
-      status: "UNREAD",
-      createdAt: new Date(),
-    };
+        await prisma.contactSubmission.create({
+            data: {
+                name: validated.name,
+                email: validated.email,
+                company: validated.company,
+                serviceInterest: validated.serviceInterest,
+                budget: validated.budget,
+                message: validated.message,
+            },
+        });
 
-    submissions.push(submission);
+        // In production, send email via Resend here
+        // await sendContactNotification(submission);
 
-    // In production, send email via Resend here
-    // await sendContactNotification(submission);
+        return NextResponse.json(
+            { message: "Submission received successfully" },
+            { status: 201 },
+        );
+    } catch (error) {
+        if (error instanceof ZodError) {
+            return NextResponse.json(
+                { error: "Invalid request data" },
+                { status: 400 },
+            );
+        }
 
-    return NextResponse.json(
-      { message: "Submission received successfully" },
-      { status: 201 }
-    );
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Invalid request data" },
-      { status: 400 }
-    );
-  }
+        return NextResponse.json(
+            { error: "Failed to save submission" },
+            { status: 500 },
+        );
+    }
 }
 
 export async function GET() {
-  // Protected: admin only in production
-  return NextResponse.json({ submissions });
+    // Protected: admin only in production
+    const submissions = await prisma.contactSubmission.findMany({
+        orderBy: { createdAt: "desc" },
+    });
+
+    return NextResponse.json({ submissions });
 }
