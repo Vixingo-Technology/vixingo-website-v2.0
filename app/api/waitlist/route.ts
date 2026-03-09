@@ -1,8 +1,24 @@
 import { NextResponse } from "next/server";
 import { waitlistSchema } from "@/lib/validations";
 import { prisma } from "@/lib/db";
-import { Prisma } from "@prisma/client";
 import { ZodError } from "zod";
+
+type PrismaKnownRequestErrorLike = {
+    code?: unknown;
+};
+
+function isUniqueConstraintError(
+    error: unknown,
+): error is PrismaKnownRequestErrorLike {
+    if (typeof error !== "object" || error === null) {
+        return false;
+    }
+
+    return (
+        "code" in error &&
+        (error as PrismaKnownRequestErrorLike).code === "P2002"
+    );
+}
 
 export async function POST(request: Request) {
     try {
@@ -31,10 +47,7 @@ export async function POST(request: Request) {
             );
         }
 
-        if (
-            error instanceof Prisma.PrismaClientKnownRequestError &&
-            error.code === "P2002"
-        ) {
+        if (isUniqueConstraintError(error)) {
             return NextResponse.json(
                 { error: "This email is already on the waitlist" },
                 { status: 409 },
