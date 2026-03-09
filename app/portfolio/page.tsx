@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { prisma } from "@/lib/db";
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
     title: "Portfolio — Vixingo",
@@ -22,6 +23,8 @@ const fallbackPortfolioItems = [
         techStack: ["Python", "LangChain", "n8n", "PostgreSQL", "React"],
         slug: "neuralflow-dashboard",
         coverImage: "",
+        externalUrl: null,
+        caseStudy: null,
     },
     {
         title: "ShopMind Ecommerce",
@@ -31,6 +34,8 @@ const fallbackPortfolioItems = [
         techStack: ["Next.js", "FastAPI", "PostgreSQL", "Stripe", "Redis"],
         slug: "shopmind-ecommerce",
         coverImage: "",
+        externalUrl: null,
+        caseStudy: null,
     },
     {
         title: "VaultBot — Internal Knowledge AI",
@@ -40,13 +45,23 @@ const fallbackPortfolioItems = [
         techStack: ["OpenAI", "pgvector", "Supabase", "Next.js"],
         slug: "vaultbot-knowledge-ai",
         coverImage: "",
+        externalUrl: null,
+        caseStudy: null,
     },
 ];
 
 async function getPortfolioItems() {
     try {
         const items = await prisma.portfolioItem.findMany({
-            where: { isPublic: true },
+            where: {
+                isPublic: true,
+                caseStudy: {
+                    is: {
+                        isPublic: true,
+                        status: "PUBLISHED_INTERNAL",
+                    },
+                },
+            },
             orderBy: [{ displayOrder: "asc" }, { createdAt: "desc" }],
             select: {
                 title: true,
@@ -55,6 +70,13 @@ async function getPortfolioItems() {
                 techStack: true,
                 slug: true,
                 coverImage: true,
+                externalUrl: true,
+                caseStudy: {
+                    select: {
+                        slug: true,
+                        title: true,
+                    },
+                },
             },
         });
 
@@ -111,79 +133,118 @@ export default async function PortfolioPage() {
 
                         {/* Grid */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-10">
-                            {portfolioItems.map((item, i) => (
-                                <ScrollReveal key={item.slug} delay={i * 100}>
-                                    <Card className="group overflow-hidden p-0 h-full flex flex-col">
-                                        <div className="relative h-48 bg-bg-elevated overflow-hidden">
-                                            {item.coverImage ? (
-                                                <img
-                                                    src={item.coverImage}
-                                                    alt={item.title}
-                                                    className="h-full w-full object-cover"
-                                                />
-                                            ) : (
-                                                <div className="absolute inset-0 bg-linear-to-br from-accent-gold/10 to-transparent" />
-                                            )}
-                                            {!item.coverImage && (
-                                                <div className="absolute inset-0 flex items-center justify-center text-accent-gold/20">
-                                                    <svg
-                                                        width="64"
-                                                        height="64"
-                                                        viewBox="0 0 24 24"
-                                                        fill="none"
-                                                        stroke="currentColor"
-                                                        strokeWidth="1"
-                                                    >
-                                                        <rect
-                                                            x="3"
-                                                            y="3"
-                                                            width="18"
-                                                            height="18"
-                                                            rx="2"
-                                                        />
-                                                        <circle
-                                                            cx="8.5"
-                                                            cy="8.5"
-                                                            r="1.5"
-                                                        />
-                                                        <path d="M21 15l-5-5L5 21" />
-                                                    </svg>
-                                                </div>
-                                            )}
-                                            <div className="absolute inset-0 bg-accent-gold/0 group-hover:bg-accent-gold/10 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
-                                                <span className="text-accent-gold font-heading font-bold text-sm">
-                                                    View Details &rarr;
-                                                </span>
-                                            </div>
-                                        </div>
+                            {portfolioItems.map((item, i) => {
+                                const linkedCaseStudy = item.caseStudy || null;
+                                const href = linkedCaseStudy
+                                    ? `/case-study/${linkedCaseStudy.slug}`
+                                    : item.externalUrl || "#";
+                                const isExternal =
+                                    !linkedCaseStudy &&
+                                    Boolean(item.externalUrl);
 
-                                        <div className="p-6 flex flex-col flex-1">
-                                            <Badge
-                                                variant="gold"
-                                                className="self-start mb-3"
-                                            >
-                                                {item.category}
-                                            </Badge>
-                                            <h3 className="font-heading font-bold text-lg">
-                                                {item.title}
-                                            </h3>
-                                            <p className="text-text-secondary text-sm mt-2 flex-1 line-clamp-2">
-                                                {item.shortDesc}
-                                            </p>
-                                            <div className="flex flex-wrap gap-1.5 mt-4">
-                                                {item.techStack.map((tech) => (
-                                                    <span
-                                                        key={tech}
-                                                        className="text-[10px] font-mono px-2 py-0.5 bg-bg-elevated rounded text-text-muted"
-                                                    >
-                                                        {tech}
+                                return (
+                                    <ScrollReveal
+                                        key={item.slug}
+                                        delay={i * 100}
+                                    >
+                                        <Card className="group overflow-hidden p-0 h-full flex flex-col">
+                                            <div className="relative h-48 bg-bg-elevated overflow-hidden">
+                                                {item.coverImage ? (
+                                                    <img
+                                                        src={item.coverImage}
+                                                        alt={item.title}
+                                                        className="h-full w-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="absolute inset-0 bg-linear-to-br from-accent-gold/10 to-transparent" />
+                                                )}
+                                                {!item.coverImage && (
+                                                    <div className="absolute inset-0 flex items-center justify-center text-accent-gold/20">
+                                                        <svg
+                                                            width="64"
+                                                            height="64"
+                                                            viewBox="0 0 24 24"
+                                                            fill="none"
+                                                            stroke="currentColor"
+                                                            strokeWidth="1"
+                                                        >
+                                                            <rect
+                                                                x="3"
+                                                                y="3"
+                                                                width="18"
+                                                                height="18"
+                                                                rx="2"
+                                                            />
+                                                            <circle
+                                                                cx="8.5"
+                                                                cy="8.5"
+                                                                r="1.5"
+                                                            />
+                                                            <path d="M21 15l-5-5L5 21" />
+                                                        </svg>
+                                                    </div>
+                                                )}
+                                                <div className="absolute inset-0 bg-accent-gold/0 group-hover:bg-accent-gold/10 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                                    <span className="text-accent-gold font-heading font-bold text-sm">
+                                                        View Details &rarr;
                                                     </span>
-                                                ))}
+                                                </div>
                                             </div>
-                                        </div>
-                                    </Card>
-                                </ScrollReveal>
-                            ))}
+
+                                            <div className="p-6 flex flex-col flex-1">
+                                                <Badge
+                                                    variant="gold"
+                                                    className="self-start mb-3"
+                                                >
+                                                    {item.category}
+                                                </Badge>
+                                                <h3 className="font-heading font-bold text-lg">
+                                                    {item.title}
+                                                </h3>
+                                                <p className="text-text-secondary text-sm mt-2 flex-1 line-clamp-2">
+                                                    {item.shortDesc}
+                                                </p>
+                                                <div className="flex flex-wrap gap-1.5 mt-4">
+                                                    {item.techStack.map(
+                                                        (tech) => (
+                                                            <span
+                                                                key={tech}
+                                                                className="text-[10px] font-mono px-2 py-0.5 bg-bg-elevated rounded text-text-muted"
+                                                            >
+                                                                {tech}
+                                                            </span>
+                                                        ),
+                                                    )}
+                                                </div>
+                                                <div className="mt-4 pt-3 border-t border-bg-border">
+                                                    {href === "#" ? (
+                                                        <span className="text-sm text-text-muted">
+                                                            Case study coming
+                                                            soon
+                                                        </span>
+                                                    ) : isExternal ? (
+                                                        <a
+                                                            href={href}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="text-sm font-heading font-bold text-accent-gold hover:opacity-80 transition-opacity"
+                                                        >
+                                                            View Project &rarr;
+                                                        </a>
+                                                    ) : (
+                                                        <Link
+                                                            href={href}
+                                                            className="text-sm font-heading font-bold text-accent-gold hover:opacity-80 transition-opacity"
+                                                        >
+                                                            View Project &rarr;
+                                                        </Link>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </Card>
+                                    </ScrollReveal>
+                                );
+                            })}
                         </div>
                     </div>
                 </section>

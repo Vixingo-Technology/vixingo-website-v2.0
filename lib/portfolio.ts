@@ -11,6 +11,8 @@ export interface ParsedPortfolioPayload {
     techStack: string[];
     images: string[];
     externalUrl: string;
+    caseStudyId: string;
+    hasCaseStudyId: boolean;
     isFeatured: boolean;
     isPublic: boolean;
     coverImageFile: File | null;
@@ -71,6 +73,7 @@ export async function parsePortfolioPayload(
         const formData = await request.formData();
         const coverImageEntry = formData.get("coverImage");
         const coverImageUrl = toCleanString(formData.get("coverImageUrl"));
+        const hasCaseStudyId = formData.has("caseStudyId");
 
         let coverImageFile: File | null = null;
         if (coverImageEntry instanceof File && coverImageEntry.size > 0) {
@@ -87,6 +90,8 @@ export async function parsePortfolioPayload(
             techStack: parseArray(formData.get("techStack")),
             images: parseArray(formData.get("images")),
             externalUrl: toCleanString(formData.get("externalUrl")),
+            caseStudyId: toCleanString(formData.get("caseStudyId")),
+            hasCaseStudyId,
             isFeatured: parseBoolean(formData.get("isFeatured")),
             isPublic: parseBoolean(formData.get("isPublic"), true),
             coverImageFile,
@@ -94,6 +99,10 @@ export async function parsePortfolioPayload(
     }
 
     const body = (await request.json()) as Record<string, unknown>;
+    const hasCaseStudyId = Object.prototype.hasOwnProperty.call(
+        body,
+        "caseStudyId",
+    );
 
     return {
         title: toCleanString(body.title),
@@ -105,6 +114,8 @@ export async function parsePortfolioPayload(
         techStack: parseArray(body.techStack),
         images: parseArray(body.images),
         externalUrl: toCleanString(body.externalUrl),
+        caseStudyId: toCleanString(body.caseStudyId),
+        hasCaseStudyId,
         isFeatured: parseBoolean(body.isFeatured),
         isPublic: parseBoolean(body.isPublic, true),
         coverImageFile: null,

@@ -16,6 +16,11 @@ interface SessionUser {
     role?: string;
 }
 
+interface ResolveCaseStudyResult {
+    caseStudyId: string | null;
+    error?: string;
+}
+
 async function getCurrentUser() {
     const session = await getServerSession(authOptions);
     const user = session?.user as SessionUser | undefined;
@@ -24,10 +29,47 @@ async function getCurrentUser() {
     return { id: user.id, role: user.role };
 }
 
+async function resolveCaseStudyForPortfolio(
+    caseStudyId: string,
+    currentPortfolioId?: string,
+): Promise<ResolveCaseStudyResult> {
+    if (!caseStudyId) {
+        return { caseStudyId: null };
+    }
+
+    const study = await prisma.caseStudy.findUnique({
+        where: { id: caseStudyId },
+        select: {
+            id: true,
+            portfolioItem: {
+                select: { id: true },
+            },
+        },
+    });
+
+    if (!study) {
+        return {
+            caseStudyId: null,
+            error: "Selected case study was not found",
+        };
+    }
+
+    if (study.portfolioItem && study.portfolioItem.id !== currentPortfolioId) {
+        return {
+            caseStudyId: null,
+            error: "Selected case study is already linked to another portfolio project",
+        };
+    }
+
+    return { caseStudyId: study.id };
+}
+
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const publicOnly = searchParams.get("public") === "true";
+        const unlinked = searchParams.get("unlinked") === "true";
+        const includeId = searchParams.get("includeId") || "";
 
         if (!publicOnly) {
             const user = await getCurrentUser();
@@ -39,8 +81,53 @@ export async function GET(request: Request) {
             }
         }
 
+        let whereClause:
+            | {
+                  isPublic?: boolean;
+                  caseStudyId?: string | { not: null } | null;
+                  caseStudy?: {
+                      is: {
+                          isPublic: boolean;
+                          status: "PUBLISHED_INTERNAL";
+                      };
+                  };
+                  OR?: Array<{ caseStudyId: null } | { id: string }>;
+              }
+            | undefined;
+
+        if (publicOnly) {
+            whereClause = {
+                isPublic: true,
+                caseStudy: {
+                    is: {
+                        isPublic: true,
+                        status: "PUBLISHED_INTERNAL",
+                    },
+                },
+            };
+        } else if (unlinked) {
+            whereClause = includeId
+                ? {
+                      OR: [{ caseStudyId: null }, { id: includeId }],
+                  }
+                : {
+                      caseStudyId: null,
+                  };
+        }
+
         const items = await prisma.portfolioItem.findMany({
-            where: publicOnly ? { isPublic: true } : undefined,
+            where: whereClause,
+            include: {
+                caseStudy: {
+                    select: {
+                        id: true,
+                        title: true,
+                        slug: true,
+                        isPublic: true,
+                        status: true,
+                    },
+                },
+            },
             orderBy: [{ displayOrder: "asc" }, { createdAt: "desc" }],
         });
 
@@ -93,9 +180,25 @@ export async function POST(request: Request) {
             category: payload.category,
             techStack: payload.techStack,
             externalUrl: payload.externalUrl,
+            caseStudyId: payload.caseStudyId || undefined,
             isFeatured: payload.isFeatured,
             isPublic: payload.isPublic,
         });
+
+        const resolvedCaseStudy = await resolveCaseStudyForPortfolio(
+            validated.caseStudyId || "",
+        );
+
+        if (resolvedCaseStudy.error) {
+            return NextResponse.json(
+                { error: resolvedCaseStudy.error },
+                { status: 400 },
+            );
+        }
+
+        const isPublic =
+            (validated.isPublic ?? true) &&
+            Boolean(resolvedCaseStudy.caseStudyId);
 
         const item = await prisma.portfolioItem.create({
             data: {
@@ -109,8 +212,20 @@ export async function POST(request: Request) {
                 techStack: validated.techStack || [],
                 externalUrl: validated.externalUrl || null,
                 isFeatured: validated.isFeatured ?? false,
-                isPublic: validated.isPublic ?? true,
+                isPublic,
+                caseStudyId: resolvedCaseStudy.caseStudyId,
                 createdById: user.id,
+            },
+            include: {
+                caseStudy: {
+                    select: {
+                        id: true,
+                        title: true,
+                        slug: true,
+                        isPublic: true,
+                        status: true,
+                    },
+                },
             },
         });
 

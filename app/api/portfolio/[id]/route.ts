@@ -20,12 +20,52 @@ interface RouteContext {
     params: Promise<{ id: string }>;
 }
 
+interface ResolveCaseStudyResult {
+    caseStudyId: string | null;
+    error?: string;
+}
+
 async function getCurrentUser() {
     const session = await getServerSession(authOptions);
     const user = session?.user as SessionUser | undefined;
 
     if (!user?.id) return null;
     return { id: user.id, role: user.role };
+}
+
+async function resolveCaseStudyForPortfolio(
+    caseStudyId: string,
+    currentPortfolioId?: string,
+): Promise<ResolveCaseStudyResult> {
+    if (!caseStudyId) {
+        return { caseStudyId: null };
+    }
+
+    const study = await prisma.caseStudy.findUnique({
+        where: { id: caseStudyId },
+        select: {
+            id: true,
+            portfolioItem: {
+                select: { id: true },
+            },
+        },
+    });
+
+    if (!study) {
+        return {
+            caseStudyId: null,
+            error: "Selected case study was not found",
+        };
+    }
+
+    if (study.portfolioItem && study.portfolioItem.id !== currentPortfolioId) {
+        return {
+            caseStudyId: null,
+            error: "Selected case study is already linked to another portfolio project",
+        };
+    }
+
+    return { caseStudyId: study.id };
 }
 
 export async function PUT(request: Request, context: RouteContext) {
@@ -45,6 +85,14 @@ export async function PUT(request: Request, context: RouteContext) {
         const { id } = await context.params;
         const existing = await prisma.portfolioItem.findUnique({
             where: { id },
+            select: {
+                id: true,
+                slug: true,
+                title: true,
+                coverImage: true,
+                caseStudyId: true,
+                isPublic: true,
+            },
         });
 
         if (!existing) {
@@ -77,9 +125,31 @@ export async function PUT(request: Request, context: RouteContext) {
             category: payload.category,
             techStack: payload.techStack,
             externalUrl: payload.externalUrl,
+            caseStudyId: payload.caseStudyId || undefined,
             isFeatured: payload.isFeatured,
             isPublic: payload.isPublic,
         });
+
+        let nextCaseStudyId = existing.caseStudyId;
+        if (payload.hasCaseStudyId) {
+            const resolvedCaseStudy = await resolveCaseStudyForPortfolio(
+                validated.caseStudyId || "",
+                existing.id,
+            );
+
+            if (resolvedCaseStudy.error) {
+                return NextResponse.json(
+                    { error: resolvedCaseStudy.error },
+                    { status: 400 },
+                );
+            }
+
+            nextCaseStudyId = resolvedCaseStudy.caseStudyId;
+        }
+
+        const isPublic =
+            (validated.isPublic ?? existing.isPublic) &&
+            Boolean(nextCaseStudyId);
 
         const item = await prisma.portfolioItem.update({
             where: { id },
@@ -94,7 +164,19 @@ export async function PUT(request: Request, context: RouteContext) {
                 techStack: validated.techStack || [],
                 externalUrl: validated.externalUrl || null,
                 isFeatured: validated.isFeatured ?? false,
-                isPublic: validated.isPublic ?? true,
+                isPublic,
+                caseStudyId: nextCaseStudyId,
+            },
+            include: {
+                caseStudy: {
+                    select: {
+                        id: true,
+                        title: true,
+                        slug: true,
+                        isPublic: true,
+                        status: true,
+                    },
+                },
             },
         });
 

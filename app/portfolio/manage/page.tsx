@@ -21,13 +21,32 @@ interface PortfolioItem {
     images: string[];
     isFeatured: boolean;
     isPublic: boolean;
+    caseStudy: {
+        id: string;
+        title: string;
+        slug: string;
+        isPublic: boolean;
+        status: "DRAFT" | "INTERNAL_REVIEW" | "PUBLISHED_INTERNAL";
+    } | null;
     createdAt: string;
     updatedAt: string;
+}
+
+interface CaseStudyOption {
+    id: string;
+    title: string;
+    slug: string;
+    isPublic: boolean;
+    status: "DRAFT" | "INTERNAL_REVIEW" | "PUBLISHED_INTERNAL";
+    portfolioItem: {
+        id: string;
+    } | null;
 }
 
 interface PortfolioApiResponse {
     items?: PortfolioItem[];
     item?: PortfolioItem;
+    studies?: CaseStudyOption[];
     error?: string;
 }
 
@@ -38,15 +57,22 @@ const emptyForm = {
     fullDesc: "",
     techStack: "",
     externalUrl: "",
+    caseStudyId: "",
     isFeatured: false,
     isPublic: true,
 };
 
 export default function PortfolioManagePage() {
     const [items, setItems] = useState<PortfolioItem[]>([]);
+    const [caseStudyOptions, setCaseStudyOptions] = useState<CaseStudyOption[]>(
+        [],
+    );
     const [showEditor, setShowEditor] = useState(false);
     const [editingItem, setEditingItem] = useState<PortfolioItem | null>(null);
     const [filterCategory, setFilterCategory] = useState("all");
+    const [filterLinkStatus, setFilterLinkStatus] = useState<
+        "all" | "linked" | "unlinked"
+    >("all");
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
@@ -93,9 +119,14 @@ export default function PortfolioManagePage() {
         () =>
             items.filter(
                 (i) =>
-                    filterCategory === "all" || i.category === filterCategory,
+                    (filterCategory === "all" ||
+                        i.category === filterCategory) &&
+                    (filterLinkStatus === "all" ||
+                        (filterLinkStatus === "linked"
+                            ? Boolean(i.caseStudy)
+                            : !i.caseStudy)),
             ),
-        [filterCategory, items],
+        [filterCategory, filterLinkStatus, items],
     );
 
     const categories = useMemo(() => {
@@ -124,18 +155,52 @@ export default function PortfolioManagePage() {
                 fullDesc: item.fullDesc || "",
                 techStack: item.techStack.join(", "),
                 externalUrl: item.externalUrl || "",
+                caseStudyId: item.caseStudy?.id || "",
                 isFeatured: item.isFeatured,
                 isPublic: item.isPublic,
             });
             setCoverImagePreview(item.coverImage);
+            void loadCaseStudyOptions(item.caseStudy?.id);
         } else {
             setEditingItem(null);
             setForm(emptyForm);
             setCoverImagePreview("");
+            void loadCaseStudyOptions();
         }
 
         setCoverImageFile(null);
         setShowEditor(true);
+    };
+
+    const loadCaseStudyOptions = async (includeId?: string) => {
+        try {
+            const params = new URLSearchParams({ unlinked: "true" });
+            if (includeId) {
+                params.set("includeId", includeId);
+            }
+
+            const response = await fetch(
+                `/api/case-studies?${params.toString()}`,
+                {
+                    cache: "no-store",
+                },
+            );
+            const data = (await response.json()) as PortfolioApiResponse;
+
+            if (!response.ok) {
+                throw new Error(
+                    data.error || "Failed to load case study options",
+                );
+            }
+
+            setCaseStudyOptions(data.studies || []);
+        } catch (error) {
+            const message =
+                error instanceof Error
+                    ? error.message
+                    : "Failed to load case study options";
+            toast.error(message);
+        }
     };
 
     const handleCoverImageChange = (file: File | null) => {
@@ -161,6 +226,7 @@ export default function PortfolioManagePage() {
         data.append("fullDesc", form.fullDesc);
         data.append("techStack", form.techStack);
         data.append("externalUrl", form.externalUrl);
+        data.append("caseStudyId", form.caseStudyId);
         data.append("isFeatured", String(form.isFeatured));
         data.append("isPublic", String(form.isPublic));
 
@@ -280,6 +346,7 @@ export default function PortfolioManagePage() {
                     category: item.category,
                     techStack: item.techStack,
                     externalUrl: item.externalUrl || "",
+                    caseStudyId: item.caseStudy?.id || "",
                     images: item.images,
                     coverImage: item.coverImage,
                     isFeatured: nextFeatured,
@@ -318,6 +385,8 @@ export default function PortfolioManagePage() {
 
     const publishedCount = items.filter((i) => i.isPublic).length;
     const featuredCount = items.filter((i) => i.isFeatured).length;
+    const linkedCount = items.filter((i) => Boolean(i.caseStudy)).length;
+    const unlinkedCount = items.length - linkedCount;
 
     return (
         <PortalShell>
@@ -330,10 +399,38 @@ export default function PortfolioManagePage() {
                         </h1>
                         <p className="text-text-secondary text-sm mt-1">
                             {items.length} projects · {featuredCount} featured ·{" "}
-                            {publishedCount} published
+                            {publishedCount} published · {linkedCount} linked ·{" "}
+                            {unlinkedCount} unlinked
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1 rounded-lg border border-bg-border p-1">
+                            {[
+                                { key: "all", label: "All" },
+                                { key: "linked", label: "Linked" },
+                                { key: "unlinked", label: "Unlinked" },
+                            ].map((option) => (
+                                <button
+                                    key={option.key}
+                                    type="button"
+                                    onClick={() =>
+                                        setFilterLinkStatus(
+                                            option.key as
+                                                | "all"
+                                                | "linked"
+                                                | "unlinked",
+                                        )
+                                    }
+                                    className={`px-2.5 py-1 text-xs rounded-md transition-colors cursor-pointer ${
+                                        filterLinkStatus === option.key
+                                            ? "bg-accent-gold text-white"
+                                            : "text-text-secondary hover:text-accent-gold"
+                                    }`}
+                                >
+                                    {option.label}
+                                </button>
+                            ))}
+                        </div>
                         <Select
                             value={filterCategory}
                             onChange={(e) => setFilterCategory(e.target.value)}
@@ -407,6 +504,17 @@ export default function PortfolioManagePage() {
                                             </p>
                                         </div>
                                         <div className="flex gap-1.5">
+                                            <Badge
+                                                variant={
+                                                    item.caseStudy
+                                                        ? "success"
+                                                        : "default"
+                                                }
+                                            >
+                                                {item.caseStudy
+                                                    ? "LINKED"
+                                                    : "UNLINKED"}
+                                            </Badge>
                                             {item.isFeatured && (
                                                 <Badge variant="gold">
                                                     Featured
@@ -429,6 +537,13 @@ export default function PortfolioManagePage() {
                                     <p className="text-sm text-text-secondary line-clamp-2">
                                         {item.shortDesc}
                                     </p>
+
+                                    {item.caseStudy && (
+                                        <p className="text-xs text-text-muted">
+                                            Linked case study:{" "}
+                                            {item.caseStudy.title}
+                                        </p>
+                                    )}
 
                                     <div className="flex flex-wrap gap-1">
                                         {item.techStack
@@ -543,6 +658,23 @@ export default function PortfolioManagePage() {
                             }
                             placeholder="e.g., Next.js, Python, PostgreSQL"
                         />
+                        <Select
+                            label="Link Case Study"
+                            value={form.caseStudyId}
+                            onChange={(e) =>
+                                setForm({
+                                    ...form,
+                                    caseStudyId: e.target.value,
+                                })
+                            }
+                        >
+                            <option value="">No link</option>
+                            {caseStudyOptions.map((study) => (
+                                <option key={study.id} value={study.id}>
+                                    {study.title} ({study.slug})
+                                </option>
+                            ))}
+                        </Select>
                         <div className="space-y-2">
                             <label className="block text-sm font-medium text-text-secondary">
                                 Cover Image

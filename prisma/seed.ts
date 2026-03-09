@@ -97,6 +97,104 @@ async function main() {
         },
     });
 
+    const finserveCaseStudy = await prisma.caseStudy.upsert({
+        where: { slug: "finserve-support-automation" },
+        update: {
+            title: "AI Support Automation for FinServe",
+            clientName: "FinServe Co",
+            industry: "Financial Services",
+            summary:
+                "Implemented a support copilot to reduce repetitive tickets and accelerate first response times.",
+            services: ["AI Automation", "AI Integration"],
+            problem:
+                "FinServe's support team was spending most of their time on repetitive tier-1 tickets and had long customer wait times.",
+            approach:
+                "We mapped top support intents, designed an AI-first triage workflow, and defined escalation paths for complex requests.",
+            solution:
+                "Built a retrieval-powered support assistant with CRM integration, confidence scoring, and human handoff controls.",
+            results:
+                "Reduced repetitive tickets by 62%, improved first response time by 79%, and increased CSAT to 94%.",
+            tags: ["ai", "support", "automation"],
+            templateKey: "ai-support-automation",
+            isPublic: true,
+            visibility: "ALL_EMPLOYEES",
+            status: "PUBLISHED_INTERNAL",
+            createdById: admin.id,
+        },
+        create: {
+            title: "AI Support Automation for FinServe",
+            slug: "finserve-support-automation",
+            clientName: "FinServe Co",
+            industry: "Financial Services",
+            summary:
+                "Implemented a support copilot to reduce repetitive tickets and accelerate first response times.",
+            services: ["AI Automation", "AI Integration"],
+            problem:
+                "FinServe's support team was spending most of their time on repetitive tier-1 tickets and had long customer wait times.",
+            approach:
+                "We mapped top support intents, designed an AI-first triage workflow, and defined escalation paths for complex requests.",
+            solution:
+                "Built a retrieval-powered support assistant with CRM integration, confidence scoring, and human handoff controls.",
+            results:
+                "Reduced repetitive tickets by 62%, improved first response time by 79%, and increased CSAT to 94%.",
+            tags: ["ai", "support", "automation"],
+            templateKey: "ai-support-automation",
+            isPublic: true,
+            visibility: "ALL_EMPLOYEES",
+            status: "PUBLISHED_INTERNAL",
+            createdById: admin.id,
+        },
+    });
+
+    const nexusCaseStudy = await prisma.caseStudy.upsert({
+        where: { slug: "nexus-operations-modernization" },
+        update: {
+            title: "Nexus Operations Workflow Modernization",
+            clientName: "Nexus Logistics",
+            industry: "Logistics",
+            summary:
+                "Modernized internal operations with connected workflow automation and observability dashboards.",
+            services: ["AI Automation", "Full-Stack Development"],
+            problem:
+                "The operations team managed disconnected tools and manual handoffs, causing delivery delays and inconsistent reporting.",
+            approach:
+                "We audited process bottlenecks, prioritized high-frequency workflows, and staged rollout across teams.",
+            solution:
+                "Launched a centralized automation and reporting platform with operational KPIs and SLA monitoring.",
+            results:
+                "Saved 140+ hours per month, reduced manual errors by 72%, and improved SLA adherence to 98%.",
+            tags: ["workflow", "operations", "automation"],
+            templateKey: "ops-workflow-modernization",
+            isPublic: true,
+            visibility: "ALL_EMPLOYEES",
+            status: "PUBLISHED_INTERNAL",
+            createdById: admin.id,
+        },
+        create: {
+            title: "Nexus Operations Workflow Modernization",
+            slug: "nexus-operations-modernization",
+            clientName: "Nexus Logistics",
+            industry: "Logistics",
+            summary:
+                "Modernized internal operations with connected workflow automation and observability dashboards.",
+            services: ["AI Automation", "Full-Stack Development"],
+            problem:
+                "The operations team managed disconnected tools and manual handoffs, causing delivery delays and inconsistent reporting.",
+            approach:
+                "We audited process bottlenecks, prioritized high-frequency workflows, and staged rollout across teams.",
+            solution:
+                "Launched a centralized automation and reporting platform with operational KPIs and SLA monitoring.",
+            results:
+                "Saved 140+ hours per month, reduced manual errors by 72%, and improved SLA adherence to 98%.",
+            tags: ["workflow", "operations", "automation"],
+            templateKey: "ops-workflow-modernization",
+            isPublic: true,
+            visibility: "ALL_EMPLOYEES",
+            status: "PUBLISHED_INTERNAL",
+            createdById: admin.id,
+        },
+    });
+
     await prisma.portfolioItem.upsert({
         where: { slug: "nexusai-dashboard" },
         update: {
@@ -110,6 +208,7 @@ async function main() {
             techStack: ["Next.js", "PostgreSQL", "Prisma", "OpenAI"],
             isFeatured: true,
             isPublic: true,
+            caseStudyId: nexusCaseStudy.id,
             createdById: admin.id,
         },
         create: {
@@ -124,6 +223,42 @@ async function main() {
             techStack: ["Next.js", "PostgreSQL", "Prisma", "OpenAI"],
             isFeatured: true,
             isPublic: true,
+            caseStudyId: nexusCaseStudy.id,
+            createdById: admin.id,
+        },
+    });
+
+    await prisma.portfolioItem.upsert({
+        where: { slug: "support-copilot-suite" },
+        update: {
+            title: "Support Copilot Suite",
+            shortDesc:
+                "AI-powered support copilot that reduces ticket handling time and triages customer intents.",
+            fullDesc:
+                "Built a support automation suite that combines intent detection, retrieval, and escalation rules for enterprise support teams.",
+            coverImage: "/assets/portfolio/support-copilot-cover.jpg",
+            images: ["/assets/portfolio/support-copilot-1.jpg"],
+            category: "AI Integration",
+            techStack: ["Next.js", "OpenAI", "PostgreSQL", "Prisma"],
+            isFeatured: true,
+            isPublic: true,
+            caseStudyId: finserveCaseStudy.id,
+            createdById: admin.id,
+        },
+        create: {
+            title: "Support Copilot Suite",
+            slug: "support-copilot-suite",
+            shortDesc:
+                "AI-powered support copilot that reduces ticket handling time and triages customer intents.",
+            fullDesc:
+                "Built a support automation suite that combines intent detection, retrieval, and escalation rules for enterprise support teams.",
+            coverImage: "/assets/portfolio/support-copilot-cover.jpg",
+            images: ["/assets/portfolio/support-copilot-1.jpg"],
+            category: "AI Integration",
+            techStack: ["Next.js", "OpenAI", "PostgreSQL", "Prisma"],
+            isFeatured: true,
+            isPublic: true,
+            caseStudyId: finserveCaseStudy.id,
             createdById: admin.id,
         },
     });

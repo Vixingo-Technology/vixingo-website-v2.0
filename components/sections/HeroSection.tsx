@@ -8,20 +8,24 @@ import Link from "next/link";
 
 export function HeroSection() {
     const { theme } = useTheme();
+    const heroGlassThemeClass =
+        theme === "light" ? "hero-glass-light" : "hero-glass-dark";
 
     return (
-        <section className="relative min-h-screen flex items-center noise-overlay overflow-x-clip">
+        <section className="hero-glass-section relative min-h-screen flex items-center noise-overlay overflow-x-clip">
             {/* Shader background animation */}
             <div
-                className={`absolute inset-0 pointer-events-none ${theme === "light" ? "opacity-30" : "opacity-60"}`}
+                className={`absolute inset-0 pointer-events-none z-0 ${theme === "light" ? "opacity-30" : "opacity-60"}`}
             >
                 <ShaderAnimation />
             </div>
 
-            {/* Overlay gradient to ensure text readability */}
-            <div className="absolute inset-0 pointer-events-none" />
+            {/* Frosted layer keeps animation visible while blurring the full hero background */}
+            <div
+                className={`hero-glass-overlay absolute inset-0 pointer-events-none z-10 ${heroGlassThemeClass}`}
+            />
 
-            <div className="container-main relative z-10 py-32 md:py-0">
+            <div className="container-main relative z-20 py-32 md:py-0">
                 <ScrollReveal delay={100}>
                     <span className="inline-block text-xs font-mono tracking-[0.3em] uppercase text-accent-gold mb-6 px-3 py-1 border border-accent-gold/30 rounded-full">
                         AI &middot; Automation &middot; Development

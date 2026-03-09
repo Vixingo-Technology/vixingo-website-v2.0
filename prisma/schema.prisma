@@ -76,15 +76,19 @@ model PortfolioItem {
   isPublic     Boolean  @default(true)
   displayOrder Int      @default(0)
   createdById  String
+  caseStudyId  String?  @unique
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  caseStudy    CaseStudy? @relation(fields: [caseStudyId], references: [id], onDelete: SetNull)
 }
 
 model CaseStudy {
   id            String         @id @default(cuid())
   title         String
+  slug          String         @unique
   clientName    String?
   industry      String?
+  summary       String?
   services      String[]
   problem       String
   approach      String
@@ -93,11 +97,14 @@ model CaseStudy {
   internalNotes String?
   images        String[]
   tags          String[]
+  templateKey   String         @default("custom")
+  isPublic      Boolean        @default(false)
   visibility    CaseVisibility @default(ALL_EMPLOYEES)
   status        CaseStatus     @default(DRAFT)
   createdById   String
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+  portfolioItem PortfolioItem?
 }
 
 enum CaseVisibility {
