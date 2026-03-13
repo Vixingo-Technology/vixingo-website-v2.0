@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import type { Prisma } from "@prisma/client";
 import { ZodError } from "zod";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import {
@@ -15,19 +14,6 @@ interface SessionUser {
     id?: string;
     role?: string;
 }
-
-type CaseStudyWithPortfolio = Prisma.CaseStudyGetPayload<{
-    include: {
-        portfolioItem: {
-            select: {
-                id: true;
-                title: true;
-                slug: true;
-                isPublic: true;
-            };
-        };
-    };
-}>;
 
 interface ResolvePortfolioItemResult {
     portfolioItemId: string | null;
@@ -128,21 +114,20 @@ export async function GET(request: Request) {
                   };
         }
 
-        const studies: CaseStudyWithPortfolio[] =
-            await prisma.caseStudy.findMany({
-                where: whereClause,
-                include: {
-                    portfolioItem: {
-                        select: {
-                            id: true,
-                            title: true,
-                            slug: true,
-                            isPublic: true,
-                        },
+        const studies = await prisma.caseStudy.findMany({
+            where: whereClause,
+            include: {
+                portfolioItem: {
+                    select: {
+                        id: true,
+                        title: true,
+                        slug: true,
+                        isPublic: true,
                     },
                 },
-                orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
-            });
+            },
+            orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
+        });
 
         return NextResponse.json({ studies });
     } catch {

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { revalidatePath, revalidateTag } from "next/cache";
-import type { Prisma } from "@prisma/client";
 import { ZodError } from "zod";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import {
@@ -18,14 +17,6 @@ interface SessionUser {
     id?: string;
     role?: string;
 }
-
-type BlogPostWithAuthor = Prisma.BlogPostGetPayload<{
-    include: {
-        author: {
-            select: { name: true };
-        };
-    };
-}>;
 
 function stripHtml(content: string): string {
     return content
@@ -64,7 +55,7 @@ export async function GET(request: Request) {
             }
         }
 
-        const posts: BlogPostWithAuthor[] = await prisma.blogPost.findMany({
+        const posts = await prisma.blogPost.findMany({
             where: publicOnly ? { status: "PUBLISHED" } : undefined,
             include: {
                 author: {
