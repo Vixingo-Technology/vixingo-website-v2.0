@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import type { Prisma } from "@prisma/client";
 import { ZodError } from "zod";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import {
@@ -156,71 +157,73 @@ export async function PUT(request: Request, context: RouteContext) {
             (validated.isPublic ?? existing.isPublic) &&
             Boolean(nextPortfolioItemId);
 
-        const study = await prisma.$transaction(async (tx) => {
-            const updated = await tx.caseStudy.update({
-                where: { id },
-                data: {
-                    title: validated.title,
-                    slug: validated.slug,
-                    clientName: validated.clientName || null,
-                    industry: validated.industry || null,
-                    summary: validated.summary || null,
-                    services: validated.services || [],
-                    problem: validated.problem,
-                    approach: validated.approach,
-                    solution: validated.solution,
-                    results: validated.results,
-                    internalNotes: validated.internalNotes || null,
-                    images: validated.images || [],
-                    tags: validated.tags || [],
-                    templateKey: validated.templateKey || "custom",
-                    isPublic,
-                    visibility: validated.visibility,
-                    status: validated.status,
-                },
-                select: { id: true },
-            });
+        const study = await prisma.$transaction(
+            async (tx: Prisma.TransactionClient) => {
+                const updated = await tx.caseStudy.update({
+                    where: { id },
+                    data: {
+                        title: validated.title,
+                        slug: validated.slug,
+                        clientName: validated.clientName || null,
+                        industry: validated.industry || null,
+                        summary: validated.summary || null,
+                        services: validated.services || [],
+                        problem: validated.problem,
+                        approach: validated.approach,
+                        solution: validated.solution,
+                        results: validated.results,
+                        internalNotes: validated.internalNotes || null,
+                        images: validated.images || [],
+                        tags: validated.tags || [],
+                        templateKey: validated.templateKey || "custom",
+                        isPublic,
+                        visibility: validated.visibility,
+                        status: validated.status,
+                    },
+                    select: { id: true },
+                });
 
-            if (payload.hasPortfolioItemId) {
-                if (
-                    linkedPortfolio?.id &&
-                    linkedPortfolio.id !== nextPortfolioItemId
-                ) {
-                    await tx.portfolioItem.update({
-                        where: { id: linkedPortfolio.id },
-                        data: {
-                            caseStudyId: null,
-                        },
-                    });
+                if (payload.hasPortfolioItemId) {
+                    if (
+                        linkedPortfolio?.id &&
+                        linkedPortfolio.id !== nextPortfolioItemId
+                    ) {
+                        await tx.portfolioItem.update({
+                            where: { id: linkedPortfolio.id },
+                            data: {
+                                caseStudyId: null,
+                            },
+                        });
+                    }
+
+                    if (
+                        nextPortfolioItemId &&
+                        linkedPortfolio?.id !== nextPortfolioItemId
+                    ) {
+                        await tx.portfolioItem.update({
+                            where: { id: nextPortfolioItemId },
+                            data: {
+                                caseStudyId: existing.id,
+                            },
+                        });
+                    }
                 }
 
-                if (
-                    nextPortfolioItemId &&
-                    linkedPortfolio?.id !== nextPortfolioItemId
-                ) {
-                    await tx.portfolioItem.update({
-                        where: { id: nextPortfolioItemId },
-                        data: {
-                            caseStudyId: existing.id,
-                        },
-                    });
-                }
-            }
-
-            return tx.caseStudy.findUnique({
-                where: { id: updated.id },
-                include: {
-                    portfolioItem: {
-                        select: {
-                            id: true,
-                            title: true,
-                            slug: true,
-                            isPublic: true,
+                return tx.caseStudy.findUnique({
+                    where: { id: updated.id },
+                    include: {
+                        portfolioItem: {
+                            select: {
+                                id: true,
+                                title: true,
+                                slug: true,
+                                isPublic: true,
+                            },
                         },
                     },
-                },
-            });
-        });
+                });
+            },
+        );
 
         if (!study) {
             return NextResponse.json(

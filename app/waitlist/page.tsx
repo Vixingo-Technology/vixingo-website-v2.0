@@ -6,123 +6,177 @@ import { ChatWidget } from "@/components/chat/ChatWidget";
 import { ScrollReveal } from "@/components/ui/ScrollReveal";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/FormElements";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { waitlistSchema, type WaitlistFormData } from "@/lib/validations";
 import { toast } from "sonner";
 
+interface WaitlistCountResponse {
+    count: number;
+}
+
+interface WaitlistSignupResponse {
+    position?: number;
+    error?: string;
+}
+
 export default function WaitlistPage() {
-  const [submitted, setSubmitted] = useState(false);
-  const [count] = useState(412);
+    const [submitted, setSubmitted] = useState(false);
+    const [count, setCount] = useState<number | null>(null);
+    const [submittedPosition, setSubmittedPosition] = useState<number | null>(
+        null,
+    );
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<WaitlistFormData>({
-    resolver: zodResolver(waitlistSchema),
-  });
+    const {
+        register,
+        handleSubmit,
+        formState: { errors, isSubmitting },
+    } = useForm<WaitlistFormData>({
+        resolver: zodResolver(waitlistSchema),
+    });
 
-  const onSubmit = async (data: WaitlistFormData) => {
-    try {
-      const res = await fetch("/api/waitlist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (res.ok) {
-        setSubmitted(true);
-        toast.success("You're on the list!");
-      } else {
-        const err = await res.json();
-        toast.error(err.error || "Something went wrong");
-      }
-    } catch {
-      toast.error("Network error. Please try again.");
-    }
-  };
+    useEffect(() => {
+        let active = true;
 
-  return (
-    <>
-      <Navbar />
-      <main className="pt-20 min-h-screen flex items-center">
-        <section className="section-padding bg-bg-primary w-full">
-          <div className="container-main max-w-2xl text-center">
-            {submitted ? (
-              <ScrollReveal>
-                <div className="space-y-6">
-                  <div className="text-6xl">🎉</div>
-                  <h1
-                    className="font-display tracking-wide gold-gradient-text"
-                    style={{ fontSize: "var(--text-h1)" }}
-                  >
-                    YOU&apos;RE IN!
-                  </h1>
-                  <p className="text-text-secondary text-lg">
-                    You&apos;re #{count + 1}! We&apos;ll notify you first when we launch.
-                  </p>
-                </div>
-              </ScrollReveal>
-            ) : (
-              <>
-                <ScrollReveal>
-                  <h1
-                    className="font-display tracking-wide"
-                    style={{ fontSize: "var(--text-h1)" }}
-                  >
-                    SOMETHING BIG
-                    <br />
-                    <span className="gold-gradient-text">IS COMING</span>
-                  </h1>
-                </ScrollReveal>
+        async function loadWaitlistCount() {
+            try {
+                const res = await fetch("/api/waitlist", { cache: "no-store" });
+                if (!res.ok) throw new Error("Failed to load waitlist count");
 
-                <ScrollReveal delay={200}>
-                  <p className="text-text-secondary text-lg mt-6 max-w-lg mx-auto">
-                    We&apos;re building the ultimate platform for businesses that want to
-                    harness AI. Smart automation, powerful integrations, all in one place.
-                  </p>
-                </ScrollReveal>
+                const data = (await res.json()) as WaitlistCountResponse;
+                if (active) {
+                    setCount(data.count);
+                }
+            } catch {
+                if (active) {
+                    toast.error("Could not load waitlist count");
+                }
+            }
+        }
 
-                <ScrollReveal delay={300}>
-                  <p className="text-accent-gold font-bold mt-8">
-                    🔥 {count} people already waiting
-                  </p>
-                </ScrollReveal>
+        loadWaitlistCount();
 
-                <ScrollReveal delay={400}>
-                  <form
-                    onSubmit={handleSubmit(onSubmit)}
-                    className="mt-8 space-y-4 max-w-md mx-auto"
-                  >
-                    <Input
-                      type="email"
-                      placeholder="your@email.com"
-                      {...register("email")}
-                      error={errors.email?.message}
-                    />
-                    <Input
-                      placeholder="Your name (optional)"
-                      {...register("name")}
-                    />
-                    <Button
-                      type="submit"
-                      variant="primary"
-                      size="lg"
-                      isLoading={isSubmitting}
-                      className="w-full"
-                    >
-                      Secure My Spot &rarr;
-                    </Button>
-                  </form>
-                </ScrollReveal>
-              </>
-            )}
-          </div>
-        </section>
-      </main>
-      <Footer />
-      <ChatWidget />
-    </>
-  );
+        return () => {
+            active = false;
+        };
+    }, []);
+
+    const onSubmit = async (data: WaitlistFormData) => {
+        try {
+            const res = await fetch("/api/waitlist", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    ...data,
+                    source: "waitlist_page",
+                }),
+            });
+            if (res.ok) {
+                const result = (await res.json()) as WaitlistSignupResponse;
+                if (typeof result.position === "number") {
+                    setCount(result.position);
+                    setSubmittedPosition(result.position);
+                }
+                setSubmitted(true);
+                toast.success("You're on the list!");
+            } else {
+                const err = (await res.json()) as WaitlistSignupResponse;
+                toast.error(err.error || "Something went wrong");
+            }
+        } catch {
+            toast.error("Network error. Please try again.");
+        }
+    };
+
+    return (
+        <>
+            <Navbar />
+            <main className="pt-20 min-h-screen flex items-center">
+                <section className="section-padding bg-bg-primary w-full">
+                    <div className="container-main max-w-2xl text-center">
+                        {submitted ? (
+                            <ScrollReveal>
+                                <div className="space-y-6">
+                                    <div className="text-6xl">🎉</div>
+                                    <h1
+                                        className="font-display tracking-wide gold-gradient-text"
+                                        style={{ fontSize: "var(--text-h1)" }}
+                                    >
+                                        YOU&apos;RE IN!
+                                    </h1>
+                                    <p className="text-text-secondary text-lg">
+                                        You&apos;re #
+                                        {submittedPosition ?? count ?? "..."}!
+                                        We&apos;ll notify you first when we
+                                        launch.
+                                    </p>
+                                </div>
+                            </ScrollReveal>
+                        ) : (
+                            <>
+                                <ScrollReveal>
+                                    <h1
+                                        className="font-display tracking-wide"
+                                        style={{ fontSize: "var(--text-h1)" }}
+                                    >
+                                        SOMETHING BIG
+                                        <br />
+                                        <span className="gold-gradient-text">
+                                            IS COMING
+                                        </span>
+                                    </h1>
+                                </ScrollReveal>
+
+                                <ScrollReveal delay={200}>
+                                    <p className="text-text-secondary text-lg mt-6 max-w-lg mx-auto">
+                                        We&apos;re building the ultimate
+                                        platform for businesses that want to
+                                        harness AI. Smart automation, powerful
+                                        integrations, all in one place.
+                                    </p>
+                                </ScrollReveal>
+
+                                <ScrollReveal delay={300}>
+                                    <p className="text-accent-gold font-bold mt-8">
+                                        🔥 {count ?? "..."} people already
+                                        waiting
+                                    </p>
+                                </ScrollReveal>
+
+                                <ScrollReveal delay={400}>
+                                    <form
+                                        onSubmit={handleSubmit(onSubmit)}
+                                        className="mt-8 space-y-4 max-w-md mx-auto"
+                                    >
+                                        <Input
+                                            type="email"
+                                            placeholder="your@email.com"
+                                            {...register("email")}
+                                            error={errors.email?.message}
+                                        />
+                                        <Input
+                                            placeholder="Your name (optional)"
+                                            {...register("name")}
+                                        />
+                                        <Button
+                                            type="submit"
+                                            variant="primary"
+                                            size="lg"
+                                            isLoading={isSubmitting}
+                                            className="w-full"
+                                        >
+                                            Secure My Spot &rarr;
+                                        </Button>
+                                    </form>
+                                </ScrollReveal>
+                            </>
+                        )}
+                    </div>
+                </section>
+            </main>
+            <Footer />
+            <ChatWidget />
+        </>
+    );
 }

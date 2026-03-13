@@ -5,65 +5,235 @@ import { StatCard } from "@/components/ui/StatCard";
 import { Badge } from "@/components/ui/Badge";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
-const stats = [
-    { icon: <UserIcon />, value: "6", label: "Team Members" },
-    { icon: <InboxIcon />, value: "24", label: "Submissions" },
-    { icon: <ListIcon />, value: "387", label: "Waitlist Signups" },
-    { icon: <DocIcon />, value: "8", label: "Blog Posts" },
-];
+type SubmissionStatus = "UNREAD" | "READ" | "REPLIED" | "ARCHIVED";
 
-const recentSubmissions = [
-    {
-        id: "1",
-        name: "Alex Chen",
-        email: "alex@acmecorp.com",
-        subject: "Enterprise Inquiry",
-        status: "NEW",
-        time: "2h ago",
-    },
-    {
-        id: "2",
-        name: "Maria Santos",
-        email: "maria@startup.io",
-        subject: "AI Integration Quote",
-        status: "NEW",
-        time: "5h ago",
-    },
-    {
-        id: "3",
-        name: "James Wilson",
-        email: "james@bigco.com",
-        subject: "Partnership Opportunity",
-        status: "READ",
-        time: "1d ago",
-    },
-    {
-        id: "4",
-        name: "Priya Sharma",
-        email: "priya@techfirm.com",
-        subject: "Consulting Request",
-        status: "REPLIED",
-        time: "2d ago",
-    },
-];
+interface AdminSubmission {
+    id: string;
+    name: string;
+    serviceInterest: string;
+    status: SubmissionStatus;
+    createdAt: string;
+}
 
-const recentWaitlist = [
-    { email: "david@startup.ai", date: "Feb 12, 2025" },
-    { email: "sarah@enterprise.co", date: "Feb 11, 2025" },
-    { email: "mike@agency.io", date: "Feb 10, 2025" },
-    { email: "lisa@fintech.com", date: "Feb 9, 2025" },
-];
+interface WaitlistEntry {
+    id: string;
+    email: string;
+    createdAt: string;
+}
+
+interface ContactResponse {
+    submissions: AdminSubmission[];
+    totalCount: number;
+}
+
+interface UsersResponse {
+    users: Array<{ id: string }>;
+}
+
+interface WaitlistResponse {
+    entries: WaitlistEntry[];
+    rawCount: number;
+}
+
+interface DashboardResponse {
+    stats: {
+        blogPosts: number;
+    };
+}
 
 const statusColors: Record<string, "danger" | "gold" | "success" | "default"> =
     {
-        NEW: "danger",
+        UNREAD: "danger",
         READ: "gold",
         REPLIED: "success",
         ARCHIVED: "default",
     };
 
+const statusLabels: Record<SubmissionStatus, string> = {
+    UNREAD: "NEW",
+    READ: "READ",
+    REPLIED: "REPLIED",
+    ARCHIVED: "ARCHIVED",
+};
+
+function formatRelativeTime(dateValue: string): string {
+    const now = Date.now();
+    const then = new Date(dateValue).getTime();
+    if (Number.isNaN(then)) return "Just now";
+
+    const diffMs = Math.max(0, now - then);
+    const minute = 60 * 1000;
+    const hour = 60 * minute;
+    const day = 24 * hour;
+
+    if (diffMs < minute) return "Just now";
+    if (diffMs < hour) {
+        const mins = Math.floor(diffMs / minute);
+        return `${mins}h ago`;
+    }
+    if (diffMs < day) {
+        const hours = Math.floor(diffMs / hour);
+        return `${hours}h ago`;
+    }
+
+    const days = Math.floor(diffMs / day);
+    return `${days}d ago`;
+}
+
+function formatDate(dateValue: string): string {
+    const parsed = new Date(dateValue);
+    if (Number.isNaN(parsed.getTime())) return dateValue;
+
+    return parsed.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+    });
+}
+
 export default function AdminDashboardPage() {
+    const [loading, setLoading] = useState(true);
+    const [teamMembers, setTeamMembers] = useState(0);
+    const [submissionCount, setSubmissionCount] = useState(0);
+    const [waitlistCount, setWaitlistCount] = useState(0);
+    const [blogPosts, setBlogPosts] = useState(0);
+    const [recentSubmissions, setRecentSubmissions] = useState<
+        AdminSubmission[]
+    >([]);
+    const [waitlistEntries, setWaitlistEntries] = useState<WaitlistEntry[]>([]);
+
+    useEffect(() => {
+        let active = true;
+
+        async function loadOverview() {
+            try {
+                const [usersRes, contactRes, waitlistRes, dashboardRes] =
+                    await Promise.all([
+                        fetch("/api/users", { cache: "no-store" }),
+                        fetch("/api/contact?take=4", { cache: "no-store" }),
+                        fetch("/api/waitlist?includeEntries=true", {
+                            cache: "no-store",
+                        }),
+                        fetch("/api/dashboard", { cache: "no-store" }),
+                    ]);
+
+                if (
+                    !usersRes.ok ||
+                    !contactRes.ok ||
+                    !waitlistRes.ok ||
+                    !dashboardRes.ok
+                ) {
+                    throw new Error("Failed to load admin overview data");
+                }
+
+                const usersData = (await usersRes.json()) as UsersResponse;
+                const contactData =
+                    (await contactRes.json()) as ContactResponse;
+                const waitlistData =
+                    (await waitlistRes.json()) as WaitlistResponse;
+                const dashboardData =
+                    (await dashboardRes.json()) as DashboardResponse;
+
+                if (!active) return;
+
+                setTeamMembers(usersData.users.length);
+                setSubmissionCount(contactData.totalCount);
+                setWaitlistCount(waitlistData.rawCount);
+                setBlogPosts(dashboardData.stats.blogPosts);
+                setRecentSubmissions(contactData.submissions);
+                setWaitlistEntries(waitlistData.entries);
+            } catch (error) {
+                if (active) {
+                    toast.error(
+                        (error instanceof Error ? error.message : null) ??
+                            "Could not load admin overview",
+                    );
+                }
+            } finally {
+                if (active) {
+                    setLoading(false);
+                }
+            }
+        }
+
+        loadOverview();
+
+        return () => {
+            active = false;
+        };
+    }, []);
+
+    const recentWaitlist = waitlistEntries.slice(0, 4);
+
+    const weeklySignupData = useMemo(() => {
+        const buckets: Array<{ label: string; key: string; count: number }> =
+            [];
+        const dayFormatter = new Intl.DateTimeFormat("en-US", {
+            weekday: "short",
+        });
+
+        for (let dayOffset = 6; dayOffset >= 0; dayOffset -= 1) {
+            const day = new Date();
+            day.setHours(0, 0, 0, 0);
+            day.setDate(day.getDate() - dayOffset);
+
+            const key = day.toISOString().slice(0, 10);
+            buckets.push({
+                label: dayFormatter.format(day),
+                key,
+                count: 0,
+            });
+        }
+
+        const indexByKey = new Map(
+            buckets.map((bucket, index) => [bucket.key, index]),
+        );
+
+        for (const entry of waitlistEntries) {
+            const parsed = new Date(entry.createdAt);
+            if (Number.isNaN(parsed.getTime())) continue;
+
+            const key = parsed.toISOString().slice(0, 10);
+            const bucketIndex = indexByKey.get(key);
+            if (bucketIndex === undefined) continue;
+
+            buckets[bucketIndex].count += 1;
+        }
+
+        return buckets;
+    }, [waitlistEntries]);
+
+    const maxWeeklyCount = Math.max(
+        1,
+        ...weeklySignupData.map((item) => item.count),
+    );
+
+    const stats = [
+        {
+            icon: <UserIcon />,
+            value: loading ? "..." : String(teamMembers),
+            label: "Team Members",
+        },
+        {
+            icon: <InboxIcon />,
+            value: loading ? "..." : String(submissionCount),
+            label: "Submissions",
+        },
+        {
+            icon: <ListIcon />,
+            value: loading ? "..." : String(waitlistCount),
+            label: "Waitlist Signups",
+        },
+        {
+            icon: <DocIcon />,
+            value: loading ? "..." : String(blogPosts),
+            label: "Blog Posts",
+        },
+    ];
+
     return (
         <PortalShell>
             <div className="space-y-8">
@@ -102,6 +272,11 @@ export default function AdminDashboardPage() {
                             </Link>
                         </div>
                         <div className="divide-y divide-bg-border">
+                            {!loading && recentSubmissions.length === 0 && (
+                                <div className="p-4 text-sm text-text-muted">
+                                    No submissions found.
+                                </div>
+                            )}
                             {recentSubmissions.map((sub) => (
                                 <div
                                     key={sub.id}
@@ -118,15 +293,15 @@ export default function AdminDashboardPage() {
                                                 }
                                                 className="text-[10px]"
                                             >
-                                                {sub.status}
+                                                {statusLabels[sub.status]}
                                             </Badge>
                                         </div>
                                         <p className="text-xs text-text-muted truncate">
-                                            {sub.subject}
+                                            {sub.serviceInterest} Inquiry
                                         </p>
                                     </div>
                                     <span className="text-xs text-text-muted ml-4 shrink-0">
-                                        {sub.time}
+                                        {formatRelativeTime(sub.createdAt)}
                                     </span>
                                 </div>
                             ))}
@@ -146,16 +321,21 @@ export default function AdminDashboardPage() {
                             </Link>
                         </div>
                         <div className="divide-y divide-bg-border">
-                            {recentWaitlist.map((w, i) => (
+                            {!loading && recentWaitlist.length === 0 && (
+                                <div className="p-4 text-sm text-text-muted">
+                                    No waitlist signups found.
+                                </div>
+                            )}
+                            {recentWaitlist.map((w) => (
                                 <div
-                                    key={i}
+                                    key={w.id}
                                     className="flex items-center justify-between p-4 hover:bg-bg-elevated/50 transition-colors"
                                 >
                                     <p className="text-sm text-text-primary">
                                         {w.email}
                                     </p>
                                     <span className="text-xs text-text-muted">
-                                        {w.date}
+                                        {formatDate(w.createdAt)}
                                     </span>
                                 </div>
                             ))}
@@ -167,23 +347,21 @@ export default function AdminDashboardPage() {
                                 Last 7 days
                             </p>
                             <div className="flex items-end gap-1 h-16">
-                                {[12, 8, 15, 22, 18, 25, 20].map((v, i) => (
+                                {weeklySignupData.map((item) => (
                                     <div
-                                        key={i}
+                                        key={item.key}
                                         className="flex-1 bg-accent-gold/20 hover:bg-accent-gold/40 rounded-t transition-colors"
-                                        style={{ height: `${(v / 25) * 100}%` }}
-                                        title={`${v} signups`}
+                                        style={{
+                                            height: `${Math.max((item.count / maxWeeklyCount) * 100, 8)}%`,
+                                        }}
+                                        title={`${item.count} signups`}
                                     />
                                 ))}
                             </div>
                             <div className="flex justify-between text-[10px] text-text-muted mt-1">
-                                <span>Mon</span>
-                                <span>Tue</span>
-                                <span>Wed</span>
-                                <span>Thu</span>
-                                <span>Fri</span>
-                                <span>Sat</span>
-                                <span>Sun</span>
+                                {weeklySignupData.map((item) => (
+                                    <span key={item.key}>{item.label}</span>
+                                ))}
                             </div>
                         </div>
                     </div>
