@@ -18,6 +18,10 @@ interface SessionUser {
     role?: string;
 }
 
+type BlogPostListItem = Record<string, unknown> & {
+    author: { name: string };
+};
+
 function stripHtml(content: string): string {
     return content
         .replace(/<[^>]+>/g, " ")
@@ -66,7 +70,7 @@ export async function GET(request: Request) {
         });
 
         return NextResponse.json({
-            posts: posts.map((post) => ({
+            posts: posts.map((post: BlogPostListItem) => ({
                 ...post,
                 author: post.author.name,
             })),
