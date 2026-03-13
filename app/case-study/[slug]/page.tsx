@@ -29,6 +29,7 @@ async function getPublicCaseStudyBySlug(slug: string) {
                     title: true,
                     slug: true,
                     category: true,
+                    externalUrl: true,
                 },
             },
         },
@@ -210,7 +211,27 @@ export default async function CaseStudyDetailPage({
                                                         .category
                                                 }
                                             </p>
+                                            {caseStudy.portfolioItem
+                                                .externalUrl && (
+                                                <p className="text-xs text-accent-gold mt-2">
+                                                    External Link &nearr;
+                                                </p>
+                                            )}
                                         </Link>
+                                        {caseStudy.portfolioItem
+                                            .externalUrl && (
+                                            <a
+                                                href={
+                                                    caseStudy.portfolioItem
+                                                        .externalUrl
+                                                }
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="inline-flex text-xs text-accent-gold hover:opacity-80 transition-opacity"
+                                            >
+                                                Visit Live Project &nearr;
+                                            </a>
+                                        )}
                                     </div>
                                 </Card>
                             </ScrollReveal>
