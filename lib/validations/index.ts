@@ -31,6 +31,40 @@ export const loginSchema = z.object({
 
 export type LoginFormData = z.infer<typeof loginSchema>;
 
+export const employeeInviteSchema = z.object({
+    name: z
+        .string()
+        .trim()
+        .max(80, "Name must be 80 characters or less")
+        .optional(),
+    email: z.string().trim().email("Please enter a valid email"),
+    role: z.enum(["EMPLOYEE", "SENIOR_EMPLOYEE", "ADMIN"]),
+});
+
+export type EmployeeInviteData = z.infer<typeof employeeInviteSchema>;
+
+export const employeeUpdateSchema = z
+    .object({
+        role: z.enum(["EMPLOYEE", "SENIOR_EMPLOYEE", "ADMIN"]).optional(),
+        isActive: z.boolean().optional(),
+    })
+    .refine(
+        (value) =>
+            typeof value.role !== "undefined" ||
+            typeof value.isActive !== "undefined",
+        { message: "At least one field must be updated" },
+    );
+
+export type EmployeeUpdateData = z.infer<typeof employeeUpdateSchema>;
+
+export const employeeInviteAcceptSchema = z.object({
+    password: z.string().min(8, "Password must be at least 8 characters"),
+});
+
+export type EmployeeInviteAcceptData = z.infer<
+    typeof employeeInviteAcceptSchema
+>;
+
 export const taskSchema = z.object({
     title: z.string().min(1, "Title is required"),
     description: z.string().optional(),

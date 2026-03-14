@@ -31,11 +31,12 @@ A production-ready company website & internal platform built with **Next.js 16**
 - **Case Studies** — CRUD with visibility controls (Public / Internal / Confidential)
 - **Blog CMS** — Rich text editor (Tiptap) for creating & managing posts
 - **Portfolio Manager** — CRUD with featured toggle & category filters
+- **Employee Invites** — Email invite links with first-time password setup
 
 ### Admin Panel (Admin Role Only)
 
 - **Admin Dashboard** — KPIs, recent submissions, waitlist chart
-- **Employee Management** — Invite, role editing, activate/deactivate
+- **Employee Management** — Invite by email, role editing, activate/deactivate
 - **Submissions Inbox** — Contact form emails with read/reply/archive workflow
 - **Waitlist Management** — Table with CSV export, bulk actions, source breakdown
 - **Settings** — Company info, social links, notifications, chatbot config
@@ -57,7 +58,8 @@ A production-ready company website & internal platform built with **Next.js 16**
 | Language   | TypeScript 5                            |
 | Styling    | Tailwind CSS v4 + CSS custom properties |
 | Auth       | NextAuth.js v4 (Credentials, JWT)       |
-| Database   | Prisma 5 + PostgreSQL                   |
+| Database   | Prisma 7 + PostgreSQL                   |
+| Email      | Nodemailer (SMTP) for employee invites  |
 | Rich Text  | Tiptap                                  |
 | Animations | Framer Motion, CSS keyframes            |
 | Icons      | Phosphor Icons                          |
@@ -101,6 +103,21 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to view the site.
+
+### Employee Invite SMTP
+
+Set these environment variables if you want employee invites from `/admin/employees` to be delivered by email:
+
+```bash
+SMTP_HOST="smtp.example.com"
+SMTP_PORT="587"
+SMTP_SECURE="false"
+SMTP_USER="smtp-user@example.com"
+SMTP_PASS="smtp-password"
+SMTP_FROM="Vixingo <noreply@vixingo.com>"
+```
+
+If SMTP is not configured, the admin invite flow still creates a valid invite token and shows a manual setup link that can be copied and shared directly.
 
 ### Use Supabase As The Database
 
