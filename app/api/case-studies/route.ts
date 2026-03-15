@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { ZodError } from "zod";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import {

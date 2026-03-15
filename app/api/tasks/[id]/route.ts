@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { revalidatePath } from "next/cache";
-import type { Prisma, Priority, TaskStatus } from "@prisma/client";
+import { Prisma, type Priority, type TaskStatus } from "@prisma/client";
 import { z, ZodError } from "zod";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/db";
