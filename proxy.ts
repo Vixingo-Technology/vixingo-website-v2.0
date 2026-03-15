@@ -10,11 +10,16 @@ const protectedPaths = [
 ];
 const adminPaths = ["/admin"];
 
+const nextAuthSecret = process.env.NEXTAUTH_SECRET;
+
+if (!nextAuthSecret && process.env.NODE_ENV === "production") {
+    throw new Error("NEXTAUTH_SECRET is required in production.");
+}
+
 export async function proxy(req: NextRequest) {
     const token = await getToken({
         req,
-        secret:
-            process.env.NEXTAUTH_SECRET || "dev-secret-change-in-production",
+        secret: nextAuthSecret || "dev-secret-change-in-production",
     });
     const { pathname } = req.nextUrl;
 

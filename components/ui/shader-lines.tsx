@@ -1,86 +1,94 @@
-"use client"
+"use client";
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef } from "react";
+
+type ThreeCamera = { position: { z: number } };
+type ThreeScene = { add: (object: unknown) => void };
+type ThreeVector2 = { x: number; y: number };
+type ThreeRenderer = {
+    domElement: HTMLCanvasElement;
+    setPixelRatio: (ratio: number) => void;
+    setSize: (width: number, height: number) => void;
+    render: (scene: ThreeScene, camera: ThreeCamera) => void;
+    dispose: () => void;
+};
+type ShaderUniforms = {
+    time: { type: "f"; value: number };
+    resolution: { type: "v2"; value: ThreeVector2 };
+};
+
+type ThreeNamespace = {
+    Camera: new () => ThreeCamera;
+    Scene: new () => ThreeScene;
+    PlaneBufferGeometry: new (width: number, height: number) => unknown;
+    Vector2: new () => ThreeVector2;
+    ShaderMaterial: new (config: {
+        uniforms: ShaderUniforms;
+        vertexShader: string;
+        fragmentShader: string;
+    }) => unknown;
+    Mesh: new (geometry: unknown, material: unknown) => unknown;
+    WebGLRenderer: new () => ThreeRenderer;
+};
 
 declare global {
-  interface Window {
-    THREE: any
-  }
+    interface Window {
+        THREE?: ThreeNamespace;
+    }
 }
 
 export function ShaderAnimation() {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const sceneRef = useRef<{
-    camera: any
-    scene: any
-    renderer: any
-    uniforms: any
-    animationId: number | null
-  }>({
-    camera: null,
-    scene: null,
-    renderer: null,
-    uniforms: null,
-    animationId: null,
-  })
+    const containerRef = useRef<HTMLDivElement>(null);
+    const sceneRef = useRef<{
+        camera: ThreeCamera | null;
+        scene: ThreeScene | null;
+        renderer: ThreeRenderer | null;
+        uniforms: ShaderUniforms | null;
+        animationId: number | null;
+        onResize: (() => void) | null;
+    }>({
+        camera: null,
+        scene: null,
+        renderer: null,
+        uniforms: null,
+        animationId: null,
+        onResize: null,
+    });
 
-  useEffect(() => {
-    // Load Three.js dynamically
-    const script = document.createElement("script")
-    script.src = "https://cdnjs.cloudflare.com/ajax/libs/three.js/89/three.min.js"
-    script.onload = () => {
-      if (containerRef.current && window.THREE) {
-        initThreeJS()
-      }
-    }
-    document.head.appendChild(script)
+    const initThreeJS = () => {
+        if (!containerRef.current || !window.THREE) return;
 
-    return () => {
-      // Cleanup
-      if (sceneRef.current.animationId) {
-        cancelAnimationFrame(sceneRef.current.animationId)
-      }
-      if (sceneRef.current.renderer) {
-        sceneRef.current.renderer.dispose()
-      }
-      document.head.removeChild(script)
-    }
-  }, [])
+        const THREE = window.THREE;
+        const container = containerRef.current;
 
-  const initThreeJS = () => {
-    if (!containerRef.current || !window.THREE) return
+        // Clear any existing content
+        container.innerHTML = "";
 
-    const THREE = window.THREE
-    const container = containerRef.current
+        // Initialize camera
+        const camera = new THREE.Camera();
+        camera.position.z = 1;
 
-    // Clear any existing content
-    container.innerHTML = ""
+        // Initialize scene
+        const scene = new THREE.Scene();
 
-    // Initialize camera
-    const camera = new THREE.Camera()
-    camera.position.z = 1
+        // Create geometry
+        const geometry = new THREE.PlaneBufferGeometry(2, 2);
 
-    // Initialize scene
-    const scene = new THREE.Scene()
+        // Define uniforms
+        const uniforms: ShaderUniforms = {
+            time: { type: "f", value: 1.0 },
+            resolution: { type: "v2", value: new THREE.Vector2() },
+        };
 
-    // Create geometry
-    const geometry = new THREE.PlaneBufferGeometry(2, 2)
-
-    // Define uniforms
-    const uniforms = {
-      time: { type: "f", value: 1.0 },
-      resolution: { type: "v2", value: new THREE.Vector2() },
-    }
-
-    // Vertex shader
-    const vertexShader = `
+        // Vertex shader
+        const vertexShader = `
       void main() {
         gl_Position = vec4( position, 1.0 );
       }
-    `
+    `;
 
-    // Fragment shader
-    const fragmentShader = `
+        // Fragment shader
+        const fragmentShader = `
       #define TWO_PI 6.2831853072
       #define PI 3.14159265359
 
@@ -119,58 +127,81 @@ export function ShaderAnimation() {
 
         gl_FragColor = vec4(color[2],color[1],color[0],1.0);
       }
-    `
+    `;
 
-    // Create material
-    const material = new THREE.ShaderMaterial({
-      uniforms: uniforms,
-      vertexShader: vertexShader,
-      fragmentShader: fragmentShader,
-    })
+        // Create material
+        const material = new THREE.ShaderMaterial({
+            uniforms,
+            vertexShader,
+            fragmentShader,
+        });
 
-    // Create mesh and add to scene
-    const mesh = new THREE.Mesh(geometry, material)
-    scene.add(mesh)
+        // Create mesh and add to scene
+        const mesh = new THREE.Mesh(geometry, material);
+        scene.add(mesh);
 
-    // Initialize renderer
-    const renderer = new THREE.WebGLRenderer()
-    renderer.setPixelRatio(window.devicePixelRatio)
-    container.appendChild(renderer.domElement)
+        // Initialize renderer
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setPixelRatio(window.devicePixelRatio);
+        container.appendChild(renderer.domElement);
 
-    // Store references
-    sceneRef.current = {
-      camera,
-      scene,
-      renderer,
-      uniforms,
-      animationId: null,
-    }
+        // Handle resize
+        const onWindowResize = () => {
+            const rect = container.getBoundingClientRect();
+            renderer.setSize(rect.width, rect.height);
+            uniforms.resolution.value.x = renderer.domElement.width;
+            uniforms.resolution.value.y = renderer.domElement.height;
+        };
 
-    // Handle resize
-    const onWindowResize = () => {
-      const rect = container.getBoundingClientRect()
-      renderer.setSize(rect.width, rect.height)
-      uniforms.resolution.value.x = renderer.domElement.width
-      uniforms.resolution.value.y = renderer.domElement.height
-    }
+        onWindowResize();
+        window.addEventListener("resize", onWindowResize, false);
 
-    onWindowResize()
-    window.addEventListener("resize", onWindowResize, false)
+        // Store references
+        sceneRef.current = {
+            camera,
+            scene,
+            renderer,
+            uniforms,
+            animationId: null,
+            onResize: onWindowResize,
+        };
 
-    // Animation loop
-    const animate = () => {
-      sceneRef.current.animationId = requestAnimationFrame(animate)
-      uniforms.time.value += 0.05
-      renderer.render(scene, camera)
-    }
+        // Animation loop
+        const animate = () => {
+            sceneRef.current.animationId = requestAnimationFrame(animate);
+            uniforms.time.value += 0.05;
+            renderer.render(scene, camera);
+        };
 
-    animate()
-  }
+        animate();
+    };
 
-  return (
-    <div
-      ref={containerRef}
-      className="w-full h-full absolute" 
-    />
-  )
+    useEffect(() => {
+        // Load Three.js dynamically
+        const script = document.createElement("script");
+        script.src =
+            "https://cdnjs.cloudflare.com/ajax/libs/three.js/89/three.min.js";
+        script.onload = () => {
+            if (containerRef.current && window.THREE) {
+                initThreeJS();
+            }
+        };
+        document.head.appendChild(script);
+
+        return () => {
+            // Cleanup
+            if (sceneRef.current.animationId) {
+                cancelAnimationFrame(sceneRef.current.animationId);
+            }
+            if (sceneRef.current.onResize) {
+                window.removeEventListener("resize", sceneRef.current.onResize);
+            }
+            if (sceneRef.current.renderer) {
+                sceneRef.current.renderer.dispose();
+            }
+            document.head.removeChild(script);
+        };
+    }, []);
+
+    return <div ref={containerRef} className="w-full h-full absolute" />;
 }

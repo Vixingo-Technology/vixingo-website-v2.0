@@ -1,50 +1,49 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import {
+    createContext,
+    useContext,
+    useEffect,
+    useState,
+    ReactNode,
+} from "react";
 
 type Theme = "dark" | "light";
 
 interface ThemeContextType {
-  theme: Theme;
-  toggleTheme: () => void;
+    theme: Theme;
+    toggleTheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: "dark",
-  toggleTheme: () => {},
+    theme: "dark",
+    toggleTheme: () => {},
 });
 
 export function useTheme() {
-  return useContext(ThemeContext);
+    return useContext(ThemeContext);
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("dark");
-  const [mounted, setMounted] = useState(false);
+    const [theme, setTheme] = useState<Theme>(() => {
+        if (typeof window === "undefined") return "dark";
+        const stored = localStorage.getItem("vixingo-theme");
+        return stored === "dark" || stored === "light" ? stored : "dark";
+    });
 
-  useEffect(() => {
-    setMounted(true);
-    const stored = localStorage.getItem("vixingo-theme") as Theme | null;
-    if (stored) {
-      setTheme(stored);
-      document.documentElement.setAttribute("data-theme", stored);
-    }
-  }, []);
+    useEffect(() => {
+        document.documentElement.setAttribute("data-theme", theme);
+        localStorage.setItem("vixingo-theme", theme);
+    }, [theme]);
 
-  const toggleTheme = () => {
-    const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    localStorage.setItem("vixingo-theme", next);
-    document.documentElement.setAttribute("data-theme", next);
-  };
+    const toggleTheme = () => {
+        const next = theme === "dark" ? "light" : "dark";
+        setTheme(next);
+    };
 
-  if (!mounted) {
-    return <>{children}</>;
-  }
-
-  return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
+    return (
+        <ThemeContext.Provider value={{ theme, toggleTheme }}>
+            {children}
+        </ThemeContext.Provider>
+    );
 }

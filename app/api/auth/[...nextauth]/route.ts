@@ -8,6 +8,12 @@ import { prisma } from "@/lib/db";
 type AppUser = User & { id: string; role: string };
 type AppToken = JWT & { id?: string; role?: string };
 
+const nextAuthSecret = process.env.NEXTAUTH_SECRET;
+
+if (!nextAuthSecret && process.env.NODE_ENV === "production") {
+    throw new Error("NEXTAUTH_SECRET is required in production.");
+}
+
 export const authOptions: NextAuthOptions = {
     providers: [
         CredentialsProvider({
@@ -83,7 +89,7 @@ export const authOptions: NextAuthOptions = {
         strategy: "jwt" as const,
         maxAge: 24 * 60 * 60, // 24 hours
     },
-    secret: process.env.NEXTAUTH_SECRET || "dev-secret-change-in-production",
+    secret: nextAuthSecret || "dev-secret-change-in-production",
 };
 
 const handler = NextAuth(authOptions);
